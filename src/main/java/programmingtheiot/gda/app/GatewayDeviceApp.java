@@ -15,6 +15,7 @@ import org.apache.commons.cli.*;
 
 import programmingtheiot.common.ConfigConst;
 import programmingtheiot.common.ConfigUtil;
+import programmingtheiot.gda.system.SystemPerformanceManager;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -37,6 +38,7 @@ public class GatewayDeviceApp
 	// private var's
 	
 	private String configFile = ConfigConst.DEFAULT_CONFIG_FILE_NAME;
+	private SystemPerformanceManager sysPerfManager = null;
 
 	// constructors
 	
@@ -50,6 +52,9 @@ public class GatewayDeviceApp
 		super();
 		
 		_Logger.info("Initializing GDA...");
+		
+		// Create SystemPerformanceManager instance
+		this.sysPerfManager = new SystemPerformanceManager();
 	}
 	
 	
@@ -148,7 +153,8 @@ public class GatewayDeviceApp
 		_Logger.info("Starting GDA...");
 		
 		try {
-			// TODO: Your code here
+			// Start SystemPerformanceManager
+			this.sysPerfManager.startManager();
 			
 			_Logger.info("GDA started successfully.");
 		} catch (Exception e) {
@@ -168,7 +174,8 @@ public class GatewayDeviceApp
 		_Logger.info("Stopping GDA...");
 		
 		try {
-			// TODO: Your code here
+			// Stop SystemPerformanceManager
+			this.sysPerfManager.stopManager();
 			
 			_Logger.log(Level.INFO, "GDA stopped successfully with exit code {0}.", code);
 		} catch (Exception e) {
