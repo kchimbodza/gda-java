@@ -141,5 +141,7 @@ public class DataUtilTest
 		assertTrue(data.getStatusCode() == data2.getStatusCode());
 		assertTrue(data.getCommand() == data2.getCommand());
 	}
-	
 }
+
+
+

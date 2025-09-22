@@ -2,98 +2,160 @@
  * This class is part of the Programming the Internet of Things
  * project, and is available via the MIT License, which can be
  * found in the LICENSE file at the top level of this repository.
- * 
- * You may find it more helpful to your design to adjust the
- * functionality, constants and interfaces (if there are any)
- * provided within in order to meet the needs of your specific
- * Programming the Internet of Things project.
  */
-
 package programmingtheiot.data;
 
-import java.nio.file.FileSystems;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 
 /**
- * Shell representation of class for student implementation.
- *
+ * Utility class for converting data objects to/from JSON using Gson.
  */
 public class DataUtil
 {
 	// static
-	
+	private static final Logger _Logger = Logger.getLogger(DataUtil.class.getName());
 	private static final DataUtil _Instance = new DataUtil();
-
+	
 	/**
 	 * Returns the Singleton instance of this class.
 	 * 
-	 * @return ConfigUtil
+	 * @return DataUtil
 	 */
 	public static final DataUtil getInstance()
 	{
 		return _Instance;
 	}
 	
-	
 	// private var's
-	
+	private Gson gson = null;
 	
 	// constructors
-	
 	/**
 	 * Default (private).
-	 * 
 	 */
 	private DataUtil()
 	{
 		super();
+		
+		// Configure Gson with pretty printing
+		this.gson = new GsonBuilder()
+			.setPrettyPrinting()
+			.create();
+		
+		_Logger.info("Created DataUtil instance.");
 	}
-	
 	
 	// public methods
 	
 	public String actuatorDataToJson(ActuatorData actuatorData)
 	{
-		return null;
+		if (actuatorData == null) {
+			_Logger.warning("ActuatorData is null. Returning empty string.");
+			return "";
+		}
+		
+		String jsonData = this.gson.toJson(actuatorData);
+		return jsonData;
 	}
 	
 	public String sensorDataToJson(SensorData sensorData)
 	{
-		return null;
+		if (sensorData == null) {
+			_Logger.warning("SensorData is null. Returning empty string.");
+			return "";
+		}
+		
+		String jsonData = this.gson.toJson(sensorData);
+		return jsonData;
 	}
 	
 	public String systemPerformanceDataToJson(SystemPerformanceData sysPerfData)
 	{
-		return null;
+		if (sysPerfData == null) {
+			_Logger.warning("SystemPerformanceData is null. Returning empty string.");
+			return "";
+		}
+		
+		String jsonData = this.gson.toJson(sysPerfData);
+		return jsonData;
 	}
 	
 	public String systemStateDataToJson(SystemStateData sysStateData)
 	{
-		return null;
+		if (sysStateData == null) {
+			_Logger.warning("SystemStateData is null. Returning empty string.");
+			return "";
+		}
+		
+		String jsonData = this.gson.toJson(sysStateData);
+		return jsonData;
 	}
 	
 	public ActuatorData jsonToActuatorData(String jsonData)
 	{
-		return null;
+		if (jsonData == null || jsonData.trim().isEmpty()) {
+			_Logger.warning("JSON data is empty or null. Returning null.");
+			return null;
+		}
+		
+		try {
+			ActuatorData actuatorData = this.gson.fromJson(jsonData, ActuatorData.class);
+			return actuatorData;
+		} catch (Exception e) {
+			_Logger.log(Level.WARNING, "Failed to convert JSON to ActuatorData: " + e.getMessage(), e);
+			return null;
+		}
 	}
 	
 	public SensorData jsonToSensorData(String jsonData)
 	{
-		return null;
+		if (jsonData == null || jsonData.trim().isEmpty()) {
+			_Logger.warning("JSON data is empty or null. Returning null.");
+			return null;
+		}
+		
+		try {
+			SensorData sensorData = this.gson.fromJson(jsonData, SensorData.class);
+			return sensorData;
+		} catch (Exception e) {
+			_Logger.log(Level.WARNING, "Failed to convert JSON to SensorData: " + e.getMessage(), e);
+			return null;
+		}
 	}
 	
 	public SystemPerformanceData jsonToSystemPerformanceData(String jsonData)
 	{
-		return null;
+		if (jsonData == null || jsonData.trim().isEmpty()) {
+			_Logger.warning("JSON data is empty or null. Returning null.");
+			return null;
+		}
+		
+		try {
+			SystemPerformanceData sysPerfData = this.gson.fromJson(jsonData, SystemPerformanceData.class);
+			return sysPerfData;
+		} catch (Exception e) {
+			_Logger.log(Level.WARNING, "Failed to convert JSON to SystemPerformanceData: " + e.getMessage(), e);
+			return null;
+		}
 	}
 	
 	public SystemStateData jsonToSystemStateData(String jsonData)
 	{
-		return null;
+		if (jsonData == null || jsonData.trim().isEmpty()) {
+			_Logger.warning("JSON data is empty or null. Returning null.");
+			return null;
+		}
+		
+		try {
+			SystemStateData sysStateData = this.gson.fromJson(jsonData, SystemStateData.class);
+			return sysStateData;
+		} catch (Exception e) {
+			_Logger.log(Level.WARNING, "Failed to convert JSON to SystemStateData: " + e.getMessage(), e);
+			return null;
+		}
 	}
-	
 }

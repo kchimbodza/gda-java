@@ -8,65 +8,82 @@
  * provided within in order to meet the needs of your specific
  * Programming the Internet of Things project.
  */
-
 package programmingtheiot.data;
 
 import java.io.Serializable;
-
 import programmingtheiot.common.ConfigConst;
 
 /**
- * Shell representation of class for student implementation.
- *
+ * Data container for actuator commands and responses.
  */
 public class ActuatorData extends BaseIotData implements Serializable
 {
 	// static
-	
+	private static final long serialVersionUID = 1L;
 	
 	// private var's
+	private int command = ConfigConst.DEFAULT_COMMAND;
+	private float value = ConfigConst.DEFAULT_VAL;
+	private boolean isResponse = false;
+	private String stateData = "";
 	
-    
-    
 	// constructors
 	
 	/**
 	 * Default.
-	 * 
 	 */
 	public ActuatorData()
 	{
 		super();
 	}
 	
-	
 	// public methods
 	
 	public int getCommand()
 	{
-		return 0;
+		return this.command;
+	}
+	
+	public String getStateData()
+	{
+		return this.stateData;
 	}
 	
 	public float getValue()
 	{
-		return 0.0f;
+		return this.value;
 	}
 	
 	public boolean isResponseFlagEnabled()
 	{
-		return false;
+		return this.isResponse;
 	}
 	
 	public void setAsResponse()
 	{
+		super.updateTimeStamp();
+		this.isResponse = true;
 	}
 	
 	public void setCommand(int command)
 	{
+		super.updateTimeStamp();
+		this.command = command;
+	}
+	
+	public void setStateData(String stateData)
+	{
+		super.updateTimeStamp();
+		
+		if (stateData != null) {
+			this.stateData = stateData;
+		}
 	}
 	
 	public void setValue(float val)
 	{
+		super.updateTimeStamp();
+		this.value = val;
 	}
 	
 	/**
@@ -87,14 +104,19 @@ public class ActuatorData extends BaseIotData implements Serializable
 		return sb.toString();
 	}
 	
-	
 	// protected methods
 	
-	/* (non-Javadoc)
-	 * @see programmingtheiot.data.BaseIotData#handleUpdateData(programmingtheiot.data.BaseIotData)
-	 */
 	protected void handleUpdateData(BaseIotData data)
 	{
+		if (data instanceof ActuatorData) {
+			ActuatorData aData = (ActuatorData) data;
+			this.setCommand(aData.getCommand());
+			this.setValue(aData.getValue());
+			this.setStateData(aData.getStateData());
+			
+			if (aData.isResponseFlagEnabled()) {
+				this.isResponse = true;
+			}
+		}
 	}
-	
 }
