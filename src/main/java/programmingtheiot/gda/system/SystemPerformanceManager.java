@@ -26,6 +26,7 @@ public class SystemPerformanceManager
     
     private SystemCpuUtilTask sysCpuUtilTask = null;
     private SystemMemUtilTask sysMemUtilTask = null;
+    private SystemDiskUtilTask sysDiskUtilTask = null;
     
     // constructors
     
@@ -40,6 +41,7 @@ public class SystemPerformanceManager
         
         this.sysCpuUtilTask = new SystemCpuUtilTask();
         this.sysMemUtilTask = new SystemMemUtilTask();
+        this.sysDiskUtilTask = new SystemDiskUtilTask();
         
         _Logger.info("Created SystemPerformanceManager instance.");
     }
@@ -50,13 +52,15 @@ public class SystemPerformanceManager
     {
         float cpuUtil = this.sysCpuUtilTask.getTelemetryValue();
         float memUtil = this.sysMemUtilTask.getTelemetryValue();
+        float diskUtil = this.sysDiskUtilTask.getTelemetryValue();
         
-        _Logger.info("CPU utilization: " + cpuUtil + ", Mem utilization: " + memUtil);
+        _Logger.info("CPU utilization: " + cpuUtil + ", Mem utilization: " + memUtil + ", Disk utilization: " + diskUtil);
         
         SystemPerformanceData spd = new SystemPerformanceData();
         spd.setLocationID(this.locationID);
         spd.setCpuUtilization(cpuUtil);
         spd.setMemoryUtilization(memUtil);
+        spd.setDiskUtilization(diskUtil);
         
         if (this.dataMsgListener != null) {
             this.dataMsgListener.handleSystemPerformanceMessage(
