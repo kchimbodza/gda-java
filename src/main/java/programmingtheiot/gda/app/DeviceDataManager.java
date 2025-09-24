@@ -49,7 +49,6 @@ public class DeviceDataManager implements IDataMessageListener
     
     private IPubSubClient mqttClient = null;
     private IPubSubClient cloudClient = null;
-    private IPersistenceClient persistenceClient = null;
     private CoapServerGateway coapServer = null;
     private SystemPerformanceManager sysPerfMgr = null;
     
@@ -82,7 +81,7 @@ public class DeviceDataManager implements IDataMessageListener
     // public methods
     public void startManager()
     {
-        _Logger.info("DeviceDataManager is starting...");
+        _Logger.info("Starting DeviceDataManager...");
         
         if (this.sysPerfMgr != null) {
             this.sysPerfMgr.startManager();

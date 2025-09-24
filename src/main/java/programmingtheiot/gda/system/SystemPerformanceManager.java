@@ -5,7 +5,11 @@
  */
 package programmingtheiot.gda.system;
 
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
+
 import programmingtheiot.common.ConfigConst;
 import programmingtheiot.common.ConfigUtil;
 import programmingtheiot.common.IDataMessageListener;
@@ -28,6 +32,9 @@ public class SystemPerformanceManager
     private SystemMemUtilTask sysMemUtilTask = null;
     private SystemDiskUtilTask sysDiskUtilTask = null;
     
+    private ScheduledExecutorService schedExecSvc = null;
+    private int pollRate = ConfigConst.DEFAULT_POLL_CYCLES;
+    
     // constructors
     
     /**
@@ -39,9 +46,15 @@ public class SystemPerformanceManager
             ConfigUtil.getInstance().getProperty(
                 ConfigConst.GATEWAY_DEVICE, ConfigConst.DEVICE_LOCATION_ID_KEY, ConfigConst.NOT_SET);
         
+        this.pollRate = 
+            ConfigUtil.getInstance().getInteger(
+                ConfigConst.GATEWAY_DEVICE, ConfigConst.POLL_CYCLES_KEY, ConfigConst.DEFAULT_POLL_CYCLES);
+        
         this.sysCpuUtilTask = new SystemCpuUtilTask();
         this.sysMemUtilTask = new SystemMemUtilTask();
         this.sysDiskUtilTask = new SystemDiskUtilTask();
+        
+        this.schedExecSvc = Executors.newScheduledThreadPool(1);
         
         _Logger.info("Created SystemPerformanceManager instance.");
     }
@@ -77,11 +90,20 @@ public class SystemPerformanceManager
     
     public void startManager()
     {
-        _Logger.info("SystemPerformanceManager started.");
+        _Logger.info("SystemPerformanceManager is starting...");
+        
+        if (this.schedExecSvc != null) {
+            this.schedExecSvc.scheduleAtFixedRate(
+                this::handleTelemetry, 0L, this.pollRate, TimeUnit.SECONDS);
+        }
     }
     
     public void stopManager()
     {
-        _Logger.info("SystemPerformanceManager stopped.");
+        if (this.schedExecSvc != null) {
+            this.schedExecSvc.shutdown();
+        }
+        
+        _Logger.info("SystemPerformanceManager is stopped.");
     }
 }
