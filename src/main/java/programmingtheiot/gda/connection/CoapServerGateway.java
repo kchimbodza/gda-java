@@ -10,9 +10,13 @@
  */
 package programmingtheiot.gda.connection;
 
+import java.util.List;
+import java.util.Queue;
+import java.util.concurrent.ArrayBlockingQueue;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import org.eclipse.californium.core.CoapResource;
 import org.eclipse.californium.core.CoapServer;
 import org.eclipse.californium.core.network.Endpoint;
 import org.eclipse.californium.core.network.interceptors.MessageTracer;
@@ -25,6 +29,9 @@ import programmingtheiot.common.ConfigConst;
 import programmingtheiot.common.IDataMessageListener;
 import programmingtheiot.common.ResourceNameEnum;
 import programmingtheiot.gda.connection.handlers.GenericCoapResourceHandler;
+import programmingtheiot.gda.connection.handlers.GetActuatorCommandResourceHandler;
+import programmingtheiot.gda.connection.handlers.UpdateSystemPerformanceResourceHandler;
+import programmingtheiot.gda.connection.handlers.UpdateTelemetryResourceHandler;
 
 /**
  * CoAP server gateway for handling CDA requests.
@@ -67,17 +74,15 @@ public class CoapServerGateway {
 	/**
 	 * Adds a resource to the CoAP server based on ResourceNameEnum
 	 * 
-	 * @param resource The resource name enumeration
+	 * @param resourceType The resource name enumeration
+	 * @param endName Optional endpoint name (can be null)
+	 * @param resource The resource handler to add
 	 */
-	public void addResource(ResourceNameEnum resource) {
-		if (resource != null && this.coapServer != null) {
-			// Create the resource chain for this resource
-			Resource resourceChain = createResourceChain(resource);
-			
-			if (resourceChain != null) {
-				this.coapServer.add(resourceChain);
-				_Logger.info("Added CoAP resource: " + resource.getResourceName());
-			}
+	public void addResource(ResourceNameEnum resourceType, String endName, Resource resource) {
+		if (resourceType != null && resource != null) {
+			// Break out the hierarchy of names and build the resource
+			// handler generation(s) as needed
+			createAndAddResourceChain(resourceType, resource);
 		}
 	}
 	
@@ -121,8 +126,7 @@ public class CoapServerGateway {
 					ep.addInterceptor(new MessageTracer());
 				}
 				
-				_Logger.info("CoAP server started successfully on port " + 
-					this.coapServer.getEndpoints().get(0).getAddress().getPort());
+				_Logger.info("CoAP server started successfully.");
 				return true;
 			} else {
 				_Logger.warning("CoAP server START failed. Not yet initialized.");
@@ -161,27 +165,60 @@ public class CoapServerGateway {
 	
 	/**
 	 * Creates a resource chain based on the ResourceNameEnum
-	 * The chain represents the path hierarchy (e.g., PIOT/constrained-device/sensor)
+	 * The chain represents the path hierarchy (e.g., PIOT/ConstrainedDevice/sensor)
 	 * 
-	 * @param resource The resource name enumeration
-	 * @return The root resource of the chain
+	 * @param resourceType The resource name enumeration
+	 * @param resource The actual resource handler to add at the end of the chain
 	 */
-	private Resource createResourceChain(ResourceNameEnum resource) {
-		if (resource != null) {
-			// Get the resource name components (split by '/')
-			// Example: "PIOT/constrained-device/sensor" -> ["PIOT", "constrained-device", "sensor"]
-			String[] resourceNames = resource.getResourceName().split("/");
-			
-			// TODO: Implement in PIOT-GDA-08-002
-			// For now, return null - we'll build the chain in the next exercise
-			_Logger.info("Resource chain creation for: " + resource.getResourceName());
+	private void createAndAddResourceChain(ResourceNameEnum resourceType, Resource resource) {
+		_Logger.info("Adding server resource handler chain: " + resourceType.getResourceName());
+		
+		List<String> resourceNames = resourceType.getResourceNameChain();
+		Queue<String> queue = new ArrayBlockingQueue<>(resourceNames.size());
+		
+		queue.addAll(resourceNames);
+		
+		// Check if we have a parent resource (start with root)
+		Resource parentResource = this.coapServer.getRoot();
+		
+		// Process the first name in the chain (should be "PIOT")
+		String rootName = queue.poll();
+		Resource rootResource = (parentResource != null) ? parentResource.getChild(rootName) : null;
+		
+		if (rootResource == null) {
+			rootResource = new CoapResource(rootName);
+			this.coapServer.add(rootResource);
 		}
 		
-		return null;
+		parentResource = rootResource;
+		
+		// Process remaining names in the chain
+		while (!queue.isEmpty()) {
+			// Get the next resource name
+			String resourceName = queue.poll();
+			Resource nextResource = parentResource.getChild(resourceName);
+			
+			if (nextResource == null) {
+				// If this is the last name in the chain, use the provided resource handler
+				if (queue.isEmpty()) {
+					nextResource = resource;
+					nextResource.setName(resourceName);
+				} else {
+					// Otherwise, create an intermediate CoapResource
+					nextResource = new CoapResource(resourceName);
+				}
+				
+				parentResource.add(nextResource);
+			}
+			
+			parentResource = nextResource;
+		}
+		
+		_Logger.info("Resource handler chain added: " + resourceType.getResourceName());
 	}
 	
 	/**
-	 * Initializes the CoAP server
+	 * Initializes the CoAP server and default resources
 	 * 
 	 * @param resources Optional resources to initialize with
 	 */
@@ -189,13 +226,48 @@ public class CoapServerGateway {
 		// Create the CoAP server instance
 		this.coapServer = new CoapServer();
 		
-		_Logger.info("CoAP server initialized.");
+		// Initialize default resource handlers
+		initDefaultResources();
 		
-		// If resources are provided, add them
-		if (resources != null && resources.length > 0) {
-			for (ResourceNameEnum resource : resources) {
-				addResource(resource);
-			}
+		_Logger.info("CoAP server initialized with default resources.");
+	}
+	
+	/**
+	 * Initialize default resource handlers for the CoAP server
+	 */
+	private void initDefaultResources() {
+		// Create and register GetActuatorCommandResourceHandler (Observable)
+		GetActuatorCommandResourceHandler getActuatorCmdResourceHandler =
+			new GetActuatorCommandResourceHandler(
+				ResourceNameEnum.CDA_ACTUATOR_CMD_RESOURCE.getResourceType());
+		
+		// Register this handler as an actuator listener with DeviceDataManager
+		if (this.dataMsgListener != null) {
+			this.dataMsgListener.setActuatorDataListener(null, getActuatorCmdResourceHandler);
 		}
+		
+		addResource(ResourceNameEnum.CDA_ACTUATOR_CMD_RESOURCE, null, getActuatorCmdResourceHandler);
+		
+		// Create and register UpdateTelemetryResourceHandler (for SensorData)
+		UpdateTelemetryResourceHandler updateTelemetryResourceHandler =
+			new UpdateTelemetryResourceHandler(
+				ResourceNameEnum.CDA_SENSOR_MSG_RESOURCE.getResourceType());
+		
+		updateTelemetryResourceHandler.setDataMessageListener(this.dataMsgListener);
+		
+		addResource(
+			ResourceNameEnum.CDA_SENSOR_MSG_RESOURCE, null, updateTelemetryResourceHandler);
+		
+		// Create and register UpdateSystemPerformanceResourceHandler
+		UpdateSystemPerformanceResourceHandler updateSystemPerformanceResourceHandler =
+			new UpdateSystemPerformanceResourceHandler(
+				ResourceNameEnum.CDA_SYSTEM_PERF_MSG_RESOURCE.getResourceType());
+		
+		updateSystemPerformanceResourceHandler.setDataMessageListener(this.dataMsgListener);
+		
+		addResource(
+			ResourceNameEnum.CDA_SYSTEM_PERF_MSG_RESOURCE, null, updateSystemPerformanceResourceHandler);
+		
+		_Logger.info("Default resource handlers initialized.");
 	}
 }

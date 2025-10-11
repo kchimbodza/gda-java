@@ -51,6 +51,7 @@ public class DeviceDataManager implements IDataMessageListener
     private IPubSubClient cloudClient = null;
     private CoapServerGateway coapServer = null;
     private SystemPerformanceManager sysPerfMgr = null;
+    private IActuatorDataListener actuatorDataListener = null;
     
     // constructors
     public DeviceDataManager()
@@ -263,9 +264,14 @@ public class DeviceDataManager implements IDataMessageListener
     {
         _Logger.info("setActuatorDataListener called for: " + name + " - not implemented in Lab Module 05");
         
-        // TODO: This will be implemented in a future lab module
-        // Future implementation will store the listener for routing actuator data updates
-        // The listener has method: onActuatorDataUpdate(ActuatorData data)
+        if (listener != null) {
+            // For now, just ignore 'name' - if you need more than one listener,
+            // you can use 'name' to create a map of listener instances
+            this.actuatorDataListener = listener;
+            
+            _Logger.info("Actuator data listener registered: " + 
+                (name != null ? name : "default"));
+        }
     }
     
     // private methods
@@ -309,8 +315,17 @@ public class DeviceDataManager implements IDataMessageListener
     {
         _Logger.fine("Analyzing incoming actuator data for resource: " + resourceName.name());
         
-        // TODO: This will eventually publish back to the CDA using either MQTT or CoAP
-        // Will be implemented in Part 03 - Connectivity
+        if (data != null) {
+            if (data.isResponseFlagEnabled()) {
+                // TODO: This is a response - handle accordingly
+                _Logger.info("Actuator response received: " + data.getName());
+            } else {
+                // This is a command - forward to the actuator listener
+                if (this.actuatorDataListener != null) {
+                    this.actuatorDataListener.onActuatorDataUpdate(data);
+                }
+            }
+        }
     }
     
     private void handleIncomingDataAnalysis(ResourceNameEnum resourceName, SystemStateData data)
