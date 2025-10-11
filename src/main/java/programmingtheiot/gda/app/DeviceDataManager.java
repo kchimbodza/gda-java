@@ -112,9 +112,11 @@ public class DeviceDataManager implements IDataMessageListener
         }
         
         if (this.coapServer != null && this.enableCoapServer) {
-            // TODO: implement this in Lab Module 8
-            // boolean success = this.coapServer.startServer();
-            // _Logger.info("CoAP server start attempt: " + success);
+        	if (this.coapServer.startServer()) {
+                _Logger.info("CoAP server started.");
+            } else {
+                _Logger.severe("Failed to start CoAP server. Check log file for details.");
+            }
         }
         
         if (this.cloudClient != null && this.enableCloudClient) {
@@ -160,9 +162,11 @@ public class DeviceDataManager implements IDataMessageListener
         }
         
         if (this.coapServer != null && this.enableCoapServer) {
-            // TODO: implement this in Lab Module 8
-            // boolean success = this.coapServer.stopServer();
-            // _Logger.info("CoAP server stop attempt: " + success);
+        	if (this.coapServer.stopServer()) {
+                _Logger.info("CoAP server stopped.");
+            } else {
+                _Logger.severe("Failed to stop CoAP server. Check log file for details.");
+            }
         }
         
         if (this.cloudClient != null && this.enableCloudClient) {
@@ -286,8 +290,8 @@ public class DeviceDataManager implements IDataMessageListener
         }
         
         if (this.enableCoapServer) {
-            // TODO: implement this in Lab Module 8
-            // this.coapServer = new CoapServerGateway();
+        	this.coapServer = new CoapServerGateway(this);
+            _Logger.info("CoAP server initialized.");
         }
         
         if (this.enableCloudClient) {
