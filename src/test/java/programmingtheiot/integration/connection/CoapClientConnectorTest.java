@@ -97,7 +97,17 @@ public class CoapClientConnectorTest
 	@Test
 	public void testConnectAndDiscover()
 	{
-		assertTrue(this.coapClient.sendDiscoveryRequest(DEFAULT_TIMEOUT));
+		 try {
+		        // Give the server a moment to be ready
+		        Thread.sleep(1000);
+		    } catch (InterruptedException e) {
+		        // ignore
+		    }
+		    
+		    boolean result = this.coapClient.sendDiscoveryRequest(DEFAULT_TIMEOUT);
+		    _Logger.info("Discovery result: " + result);
+		    
+		    assertTrue(result);
 	}
 	
 	/**

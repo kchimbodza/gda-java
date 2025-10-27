@@ -24,14 +24,12 @@ import programmingtheiot.data.SensorData;
 import programmingtheiot.gda.connection.MqttClientConnector;
 
 /**
- * This test case class contains very basic integration tests for
- * MqttClientPerformanceTest. It should not be considered complete,
- * but serve as a starting point for the student implementing
- * additional functionality within their Programming the IoT
- * environment.
+ * This test case class contains performance benchmarking tests for
+ * MqttClientConnector using different QoS levels.
+ * Tests measure the time to publish 10,000 messages at each QoS level.
  * 
  * IMPORTANT NOTE: This test expects MqttClientConnector to be
- * configured using the synchronous MqttClient.
+ * configured using the synchronous MqttClient (NOT MqttAsyncClient).
  *
  */
 public class MqttClientPerformanceTest
@@ -45,8 +43,6 @@ public class MqttClientPerformanceTest
 	
 	// member var's
 	
-	// TODO: make sure MqttClientConnector is configured to
-	// use the synchronous MqttClient
 	private MqttClientConnector mqttClient = null;
 	
 	
@@ -73,7 +69,8 @@ public class MqttClientPerformanceTest
 	// test methods
 	
 	/**
-	 * Test method for {@link programmingtheiot.gda.connection.MqttClientConnector#connectClient()}.
+	 * Test basic connect/disconnect performance.
+	 * This establishes baseline overhead for connection operations.
 	 */
 	@Test
 	public void testConnectAndDisconnect()
@@ -81,16 +78,29 @@ public class MqttClientPerformanceTest
 		long startMillis = System.currentTimeMillis();
 		
 		assertTrue(this.mqttClient.connectClient());
+		
+		try {
+			Thread.sleep(1000);
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+		}
+		
 		assertTrue(this.mqttClient.disconnectClient());
+		
+		try {
+			Thread.sleep(1000);
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+		}
 		
 		long endMillis = System.currentTimeMillis();
 		long elapsedMillis = endMillis - startMillis;
 		
-		_Logger.info("Connect and Disconnect [1]: " + elapsedMillis + " ms");
+		_Logger.info("Connect and Disconnect: " + elapsedMillis + " ms");
 	}
 	
 	/**
-	 * Test method for {@link programmingtheiot.gda.connection.MqttClientConnector#publishMessage(programmingtheiot.common.ResourceNameEnum, java.lang.String, int)}.
+	 * Test publish performance with QoS 0 (Fire and Forget).
 	 */
 	@Test
 	public void testPublishQoS0()
@@ -99,7 +109,7 @@ public class MqttClientPerformanceTest
 	}
 	
 	/**
-	 * Test method for {@link programmingtheiot.gda.connection.MqttClientConnector#publishMessage(programmingtheiot.common.ResourceNameEnum, java.lang.String, int)}.
+	 * Test publish performance with QoS 1 (At Least Once).
 	 */
 	@Test
 	public void testPublishQoS1()
@@ -108,7 +118,7 @@ public class MqttClientPerformanceTest
 	}
 	
 	/**
-	 * Test method for {@link programmingtheiot.gda.connection.MqttClientConnector#publishMessage(programmingtheiot.common.ResourceNameEnum, java.lang.String, int)}.
+	 * Test publish performance with QoS 2 (Exactly Once).
 	 */
 	@Test
 	public void testPublishQoS2()
@@ -119,22 +129,28 @@ public class MqttClientPerformanceTest
 	// private methods
 	
 	/**
-	 * @param maxTestRuns
-	 * @param qos
+	 * Execute publish performance test.
+	 * 
+	 * @param maxTestRuns Number of messages to publish
+	 * @param qos QoS level (0, 1, or 2)
 	 */
 	private void execTestPublish(int maxTestRuns, int qos)
 	{
 		assertTrue(this.mqttClient.connectClient());
 		
-		SensorData sensorData = new SensorData();
+		try {
+			Thread.sleep(1000);
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+		}
 		
+		SensorData sensorData = new SensorData();
 		String payload = DataUtil.getInstance().sensorDataToJson(sensorData);
-		int payloadLen = payload.length();
 		
 		long startMillis = System.currentTimeMillis();
 		
-		for (int sequenceNo = 1; sequenceNo <= maxTestRuns; sequenceNo++) {
-			this.mqttClient.publishMessage(ResourceNameEnum.CDA_MGMT_STATUS_CMD_RESOURCE, payload, qos);
+		for (int sequenceNo = 0; sequenceNo < maxTestRuns; sequenceNo++) {
+			this.mqttClient.publishMessage(ResourceNameEnum.CDA_SENSOR_MSG_RESOURCE, payload, qos);
 		}
 		
 		long endMillis = System.currentTimeMillis();
@@ -142,13 +158,13 @@ public class MqttClientPerformanceTest
 		
 		assertTrue(this.mqttClient.disconnectClient());
 		
-		String msg =
-			String.format(
-				"\\n\\tTesting Publish: QoS = %s | msgs = %s | payload size = %s | start = %s | end = %s | elapsed = %s",
-				qos, maxTestRuns, payloadLen,
-				(float) startMillis / 1000, (float) endMillis / 1000, (float) elapsedMillis / 1000);
+		try {
+			Thread.sleep(1000);
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+		}
 		
-		_Logger.info(msg);
+		_Logger.info("Publish message - QoS " + qos + " [" + maxTestRuns + "]: " + elapsedMillis + " ms");
 	}
 	
 }

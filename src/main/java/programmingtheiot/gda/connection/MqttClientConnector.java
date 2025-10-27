@@ -83,6 +83,16 @@ public class MqttClientConnector implements IPubSubClient, MqttCallbackExtended
 		    configUtil.getInteger(
 		        ConfigConst.MQTT_GATEWAY_SERVICE, ConfigConst.KEEP_ALIVE_KEY, ConfigConst.DEFAULT_KEEP_ALIVE);
 		
+		// Check if encryption is enabled and switch to secure protocol
+		if (configUtil.getBoolean(ConfigConst.MQTT_GATEWAY_SERVICE, ConfigConst.ENABLE_CRYPT_KEY)) {
+			this.protocol = ConfigConst.DEFAULT_MQTT_SECURE_PROTOCOL;
+			this.port = configUtil.getInteger(
+				ConfigConst.MQTT_GATEWAY_SERVICE,
+				ConfigConst.SECURE_PORT_KEY,
+				ConfigConst.DEFAULT_MQTT_SECURE_PORT
+			);
+		}
+		
 		// This next config file boolean property is optional; it can be
 		// set within the [Mqtt.GatewayService] and [Cloud.GatewayService]
 		// sections of PiotConfig.props. You can use it to create a logical
@@ -116,7 +126,7 @@ public class MqttClientConnector implements IPubSubClient, MqttCallbackExtended
 		// NOTE: Auto-reconnect can be a useful connection recovery feature
 		this.connOpts.setAutomaticReconnect(true);
 		
-		// NOTE: URL does not have a protocol handler for "tcp",
+		// NOTE: URL does not have a protocol handler for "tcp" or "ssl",
 		// so we need to construct the URL manually
 		this.brokerAddr = this.protocol + "://" + this.host + ":" + this.port;
 	}
@@ -175,14 +185,14 @@ public class MqttClientConnector implements IPubSubClient, MqttCallbackExtended
 	@Override
 	public boolean publishMessage(ResourceNameEnum topicName, String msg, int qos)
 	{
-		// TODO: determine how verbose your logging should be, especially if this method is called often
+		// NOTE: Logging disabled for performance testing to reduce I/O overhead
 		if (topicName == null) {
-			_Logger.warning("Resource is null. Unable to publish message: " + this.brokerAddr);
+			// _Logger.warning("Resource is null. Unable to publish message: " + this.brokerAddr);
 			return false;
 		}
 		
 		if (msg == null || msg.length() == 0) {
-			_Logger.warning("Message is null or empty. Unable to publish message: " + this.brokerAddr);
+			// _Logger.warning("Message is null or empty. Unable to publish message: " + this.brokerAddr);
 			return false;
 		}
 		
@@ -279,8 +289,8 @@ public class MqttClientConnector implements IPubSubClient, MqttCallbackExtended
 	@Override
 	public void deliveryComplete(IMqttDeliveryToken token)
 	{
-		// TODO: Logging level may need to be adjusted to see output in log file / console
-		_Logger.info("Delivered MQTT message with ID: " + token.getMessageId());
+		// NOTE: Logging disabled for performance testing to reduce I/O overhead
+		// _Logger.info("Delivered MQTT message with ID: " + token.getMessageId());
 	}
 	
 	@Override
