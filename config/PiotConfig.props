@@ -48,7 +48,7 @@ securePort     = 8883
 defaultQoS     = 0
 keepAlive      = 60
 enableAuth     = False
-enableCrypt    = False
+enableCrypt    = True
 useAsyncClient = False
 
 #
@@ -61,7 +61,7 @@ host           = localhost
 port           = 5683
 securePort     = 5684
 enableAuth     = False
-enableCrypt    = False
+enableCrypt    = True
 enableConfirmedMsgs = True
 
 #

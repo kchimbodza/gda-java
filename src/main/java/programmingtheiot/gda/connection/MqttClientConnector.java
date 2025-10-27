@@ -10,9 +10,16 @@
  */
 package programmingtheiot.gda.connection;
 
+import java.io.FileInputStream;
+import java.security.KeyStore;
+import java.security.cert.CertificateFactory;
+import java.security.cert.X509Certificate;
 import java.util.Properties;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.TrustManagerFactory;
 
 import org.eclipse.paho.client.mqttv3.IMqttDeliveryToken;
 import org.eclipse.paho.client.mqttv3.MqttCallbackExtended;
@@ -125,6 +132,42 @@ public class MqttClientConnector implements IPubSubClient, MqttCallbackExtended
 		
 		// NOTE: Auto-reconnect can be a useful connection recovery feature
 		this.connOpts.setAutomaticReconnect(true);
+		
+		// Set up TLS/SSL if encryption is enabled
+		if (configUtil.getBoolean(ConfigConst.MQTT_GATEWAY_SERVICE, ConfigConst.ENABLE_CRYPT_KEY)) {
+			try {
+				String certFilePath = configUtil.getProperty(
+					ConfigConst.MQTT_GATEWAY_SERVICE, ConfigConst.CERT_FILE_KEY);
+				
+				if (certFilePath != null && !certFilePath.isEmpty()) {
+					_Logger.info("Loading TLS certificate from: " + certFilePath);
+					
+					// Load the certificate
+					CertificateFactory certFactory = CertificateFactory.getInstance("X.509");
+					FileInputStream fis = new FileInputStream(certFilePath);
+					X509Certificate cert = (X509Certificate) certFactory.generateCertificate(fis);
+					fis.close();
+					
+					// Create a truststore and add the certificate
+					KeyStore trustStore = KeyStore.getInstance(KeyStore.getDefaultType());
+					trustStore.load(null, null);
+					trustStore.setCertificateEntry("mqttCert", cert);
+					
+					// Create an SSL context with the truststore
+					TrustManagerFactory tmf = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
+					tmf.init(trustStore);
+					
+					SSLContext sslContext = SSLContext.getInstance("TLSv1.2");
+					sslContext.init(null, tmf.getTrustManagers(), null);
+					
+					// Set the socket factory on the connection options
+					this.connOpts.setSocketFactory(sslContext.getSocketFactory());
+					_Logger.info("TLS/SSL socket factory configured successfully.");
+				}
+			} catch (Exception e) {
+				_Logger.log(Level.SEVERE, "Failed to configure TLS/SSL connection.", e);
+			}
+		}
 		
 		// NOTE: URL does not have a protocol handler for "tcp" or "ssl",
 		// so we need to construct the URL manually
