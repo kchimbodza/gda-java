@@ -60,6 +60,19 @@ public class DataUtil
 		return data;
 	}
 	
+	public String actuatorDataToTimeAndValueJson(ActuatorData data)
+	{
+		String jsonData = null;
+		
+		if (data != null) {
+			Gson gson = new Gson();
+			TimeAndValuePayloadData tvData = new TimeAndValuePayloadData(data);
+			jsonData = gson.toJson(tvData);
+		}
+		
+		return jsonData;
+	}
+	
 	public String sensorDataToJson(SensorData data)
 	{
 		String jsonData = null;
@@ -82,6 +95,42 @@ public class DataUtil
 		}
 		
 		return data;
+	}
+	
+	public String sensorDataToTimeAndValueJson(SensorData data)
+	{
+		String jsonData = null;
+		
+		if (data != null) {
+			Gson gson = new Gson();
+			TimeAndValuePayloadData tvData = new TimeAndValuePayloadData(data);
+			jsonData = gson.toJson(tvData);
+		}
+		
+		return jsonData;
+	}
+	
+	// ADD THIS METHOD TO YOUR DataUtil CLASS 
+	// Insert it after sensorDataToTimeAndValueJson() method
+
+	/**
+	 * Converts SystemPerformanceData to TimeAndValuePayloadData JSON format.
+	 * Used for publishing to cloud services like Ubidots.
+	 * 
+	 * @param data The SystemPerformanceData instance
+	 * @return JSON string in TimeAndValuePayloadData format
+	 */
+	public String systemPerformanceDataToTimeAndValueJson(SystemPerformanceData data)
+	{
+		String jsonData = null;
+		
+		if (data != null) {
+			Gson gson = new Gson();
+			TimeAndValuePayloadData tvData = new TimeAndValuePayloadData(data);
+			jsonData = gson.toJson(tvData);
+		}
+		
+		return jsonData;
 	}
 	
 	public String systemPerformanceDataToJson(SystemPerformanceData data)

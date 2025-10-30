@@ -152,12 +152,7 @@ public class DeviceDataManager implements IDataMessageListener
                 // in Lab Module 10. For now, they can remain here.
                 this.mqttClient.subscribeToTopic(ResourceNameEnum.GDA_MGMT_STATUS_MSG_RESOURCE, qos);
                 this.mqttClient.subscribeToTopic(ResourceNameEnum.CDA_ACTUATOR_RESPONSE_RESOURCE, qos);
-                
-                // Subscribe to sensor-specific topics instead of generic sensor topic
-                this.mqttClient.subscribeToTopic(ResourceNameEnum.CDA_TEMP_SENSOR_MSG_RESOURCE, qos);
-                this.mqttClient.subscribeToTopic(ResourceNameEnum.CDA_HUMIDITY_SENSOR_MSG_RESOURCE, qos);
-                this.mqttClient.subscribeToTopic(ResourceNameEnum.CDA_PRESSURE_SENSOR_MSG_RESOURCE, qos);
-                
+                this.mqttClient.subscribeToTopic(ResourceNameEnum.CDA_SENSOR_MSG_RESOURCE, qos);
                 this.mqttClient.subscribeToTopic(ResourceNameEnum.CDA_SYSTEM_PERF_MSG_RESOURCE, qos);
             } else {
                 _Logger.severe("Failed to connect MQTT client to broker.");
@@ -198,12 +193,7 @@ public class DeviceDataManager implements IDataMessageListener
             // the MQTT broker.
             this.mqttClient.unsubscribeFromTopic(ResourceNameEnum.GDA_MGMT_STATUS_MSG_RESOURCE);
             this.mqttClient.unsubscribeFromTopic(ResourceNameEnum.CDA_ACTUATOR_RESPONSE_RESOURCE);
-            
-            // Unsubscribe from sensor-specific topics
-            this.mqttClient.unsubscribeFromTopic(ResourceNameEnum.CDA_TEMP_SENSOR_MSG_RESOURCE);
-            this.mqttClient.unsubscribeFromTopic(ResourceNameEnum.CDA_HUMIDITY_SENSOR_MSG_RESOURCE);
-            this.mqttClient.unsubscribeFromTopic(ResourceNameEnum.CDA_PRESSURE_SENSOR_MSG_RESOURCE);
-            
+            this.mqttClient.unsubscribeFromTopic(ResourceNameEnum.CDA_SENSOR_MSG_RESOURCE);
             this.mqttClient.unsubscribeFromTopic(ResourceNameEnum.CDA_SYSTEM_PERF_MSG_RESOURCE);
             
             if (this.mqttClient.disconnectClient()) {
@@ -283,70 +273,46 @@ public class DeviceDataManager implements IDataMessageListener
         }
     }
     
+ // REPLACE YOUR EXISTING handleIncomingMessage() METHOD WITH THIS:
+
     @Override
     public boolean handleIncomingMessage(ResourceNameEnum resourceName, String msg)
     {
-        if (resourceName != null && msg != null) {
-            try {
-                // Handle sensor data from CDA - now supports all three sensor-specific topics
-                if (resourceName == ResourceNameEnum.CDA_SENSOR_MSG_RESOURCE ||
-                    resourceName == ResourceNameEnum.CDA_TEMP_SENSOR_MSG_RESOURCE ||
-                    resourceName == ResourceNameEnum.CDA_HUMIDITY_SENSOR_MSG_RESOURCE ||
-                    resourceName == ResourceNameEnum.CDA_PRESSURE_SENSOR_MSG_RESOURCE) {
-                    
-                    _Logger.info("Handling incoming SensorData message from: " + resourceName.getResourceName());
-                    
-                    SensorData sd = DataUtil.getInstance().jsonToSensorData(msg);
-                    
-                    if (sd != null) {
-                        return this.handleSensorMessage(resourceName, sd);
-                    } else {
-                        _Logger.warning("Failed to parse SensorData from JSON");
-                        return false;
-                    }
-                    
-                } else if (resourceName == ResourceNameEnum.CDA_SYSTEM_PERF_MSG_RESOURCE) {
-                    _Logger.info("Handling incoming SystemPerformanceData message");
-                    
-                    SystemPerformanceData spd = DataUtil.getInstance().jsonToSystemPerformanceData(msg);
-                    
-                    if (spd != null) {
-                        return this.handleSystemPerformanceMessage(resourceName, spd);
-                    } else {
-                        _Logger.warning("Failed to parse SystemPerformanceData from JSON");
-                        return false;
-                    }
-                    
-                } else if (resourceName == ResourceNameEnum.CDA_ACTUATOR_CMD_RESOURCE) {
-                    _Logger.info("Handling incoming ActuatorData message: " + msg);
-                    
-                    ActuatorData ad = DataUtil.getInstance().jsonToActuatorData(msg);
-                    
-                    if (ad != null) {
-                        String jsonData = DataUtil.getInstance().actuatorDataToJson(ad);
-                        
-                        if (this.mqttClient != null) {
-                            _Logger.fine("Publishing data to MQTT broker: " + jsonData);
-                            return this.mqttClient.publishMessage(resourceName, jsonData, 0);
-                        }
-                        return true;
-                    } else {
-                        _Logger.warning("Failed to parse ActuatorData from JSON");
-                        return false;
-                    }
-                    
-                } else {
-                    _Logger.warning("Failed to parse incoming message. Unknown type for resource: " + resourceName.getResourceName());
-                    return false;
-                }
-            } catch (Exception e) {
-                _Logger.log(Level.WARNING, "Failed to process incoming message for resource: " + resourceName, e);
-            }
-        } else {
-            _Logger.warning("Incoming message has no data. Ignoring for resource: " + resourceName);
-        }
-        
-        return false;
+    	if (resourceName != null && msg != null) {
+    		try {
+    			if (resourceName == ResourceNameEnum.CDA_ACTUATOR_CMD_RESOURCE) {
+    				_Logger.info("Handling incoming ActuatorData message: " + msg);
+    				
+    				// NOTE: it may seem wasteful to convert to ActuatorData and back while
+    				// the JSON data is already available; however, this provides a validation
+    				// scheme to ensure the data is actually an 'ActuatorData' instance
+    				// prior to sending off to the CDA
+    				ActuatorData ad = DataUtil.getInstance().jsonToActuatorData(msg);
+    				String jsonData = DataUtil.getInstance().actuatorDataToJson(ad);
+    				
+    				if (this.mqttClient != null) {
+    					// TODO: retrieve the QoS level from the configuration file
+    					_Logger.fine("Publishing data to MQTT broker: " + jsonData);
+    					return this.mqttClient.publishMessage(resourceName, jsonData, 0);
+    				}
+    				
+    				// TODO: If the GDA is hosting a CoAP server (or a CoAP client that
+    				// will connect to the CDA's CoAP server), you can add that logic here
+    				// in place of the MQTT client or in addition
+    				
+    			} else {
+    				_Logger.warning("Failed to parse incoming message. Unknown type: " + msg);
+    				
+    				return false;
+    			}
+    		} catch (Exception e) {
+    			_Logger.log(Level.WARNING, "Failed to process incoming message for resource: " + resourceName, e);
+    		}
+    	} else {
+    		_Logger.warning("Incoming message has no data. Ignoring for resource: " + resourceName);
+    	}
+    	
+    	return false;
     }
     
     @Override
@@ -359,18 +325,16 @@ public class DeviceDataManager implements IDataMessageListener
                 _Logger.warning("Error flag set for SensorData instance.");
             }
             
-            // Invoke humidity threshold analysis
+            // Invoke humidity threshold analysis (PIOT-GDA-10-003)
             this.handleIncomingDataAnalysis(resourceName, data);
             
-            // Convert to JSON
+            // Optional: Convert to JSON and handle upstream transmission
             String jsonData = DataUtil.getInstance().sensorDataToJson(data);
             
+            // TODO: retrieve this from config file
             int qos = ConfigConst.DEFAULT_QOS;
             
-            // ADD THIS LINE: Log that we're sending upstream
-            _Logger.info("Sent SensorData upstream to cloud service");
-            
-            // Pass to cloud client if enabled
+            // Pass to cloud client if enabled (PIOT-GDA-11-004)
             this.handleUpstreamTransmission(resourceName, data, qos);
             
             return true;

@@ -5,7 +5,6 @@
  * 
  * Copyright (c) 2020 - 2025 by Andrew D. King
  */
-
 package programmingtheiot.gda.connection;
 
 import programmingtheiot.common.IDataMessageListener;
@@ -24,7 +23,7 @@ public interface IPubSubClient
 	 * @return bool True on success, False otherwise.
 	 */
 	public boolean connectClient();
-
+	
 	/**
 	 * Disconnects from the pub/sub broker / server if the client is already connected.
 	 * If not, this call is ignored, but will return a False.
@@ -32,7 +31,7 @@ public interface IPubSubClient
 	 * @return bool True on success, False otherwise.
 	 */
 	public boolean disconnectClient();
-
+	
 	/**
 	 * Attempts to publish a message to the given topic with the given qos
 	 * to the pub/sub broker / server. If not already connected, the sub-class
@@ -45,7 +44,7 @@ public interface IPubSubClient
 	 * @return bool True on success, False otherwise.
 	 */
 	public boolean publishMessage(ResourceNameEnum topicName, String msg, int qos);
-
+	
 	/**
 	 * Attempts to subscribe to a topic with the given qos hosted by the
 	 * pub/sub broker / server. If not already connected, the sub-class
@@ -57,7 +56,7 @@ public interface IPubSubClient
 	 * @return bool True on success, False otherwise.
 	 */
 	public boolean subscribeToTopic(ResourceNameEnum topicName, int qos);
-
+	
 	/**
 	 * Attempts to unsubscribe from a topic hosted by the pub/sub broker / server.
 	 * If not already connected, the sub-class implementation should either
@@ -67,7 +66,7 @@ public interface IPubSubClient
 	 * @return bool True on success, False otherwise.
 	 */
 	public boolean unsubscribeFromTopic(ResourceNameEnum topicName);
-
+	
 	/**
 	 * Sets the data message listener reference, assuming listener is non-null.
 	 * 
@@ -76,7 +75,7 @@ public interface IPubSubClient
 	 * @return bool True on success (if listener is non-null will always be the case), False otherwise.
 	 */
 	public boolean setDataMessageListener(IDataMessageListener listener);
-
+	
 	/**
 	 * Sets the connection listener reference, assuming listener is non-null.
 	 * 
@@ -85,5 +84,4 @@ public interface IPubSubClient
 	 * @return bool True on success (if listener is non-null will always be the case), False otherwise.
 	 */
 	public boolean setConnectionListener(IConnectionListener listener);
-	
 }
