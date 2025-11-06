@@ -33,6 +33,10 @@ public enum ResourceNameEnum
 		ConfigConst.PRODUCT_NAME, ConfigConst.CONSTRAINED_DEVICE, "HumiditySensor", false, false),
 	CDA_PRESSURE_SENSOR_MSG_RESOURCE(
 		ConfigConst.PRODUCT_NAME, ConfigConst.CONSTRAINED_DEVICE, "PressureSensor", false, false),
+	CDA_PITCH_SENSOR_MSG_RESOURCE(
+		ConfigConst.PRODUCT_NAME, ConfigConst.CONSTRAINED_DEVICE, "PitchSensor", false, false),
+	CDA_LED_POSITION_MSG_RESOURCE(
+		ConfigConst.PRODUCT_NAME, ConfigConst.CONSTRAINED_DEVICE, "LedPositionMsg", false, false),
 	CDA_ACTUATOR_CMD_RESOURCE(
 		ConfigConst.PRODUCT_NAME, ConfigConst.CONSTRAINED_DEVICE, ConfigConst.ACTUATOR_CMD, false, true),
 	CDA_ACTUATOR_RESPONSE_RESOURCE(

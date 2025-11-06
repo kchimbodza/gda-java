@@ -96,9 +96,6 @@ public class CloudClientConnector implements ICloudClient, IConnectionListener
 		return false;
 	}
 	
-	// ADD THIS METHOD TO CloudClientConnector.java
-	// Place it right after the disconnectClient() method
-
 	/**
 	 * Checks if the cloud client is currently connected to the broker.
 	 * 
@@ -118,9 +115,10 @@ public class CloudClientConnector implements ICloudClient, IConnectionListener
 	{
 		if (resource != null && data != null) {
 			String jsonData = DataUtil.getInstance().sensorDataToTimeAndValueJson(data);
-			String topicName = createTopicName(resource);
+			// Use data.getName() to create variable-specific topic
+			String topicName = createTopicName(resource.getDeviceName(), data.getName());
 			
-			_Logger.fine("Publishing sensor data to cloud: " + topicName);
+			_Logger.fine("Publishing sensor data to cloud: " + topicName + " with value: " + data.getValue());
 			
 			return publishMessageToCloud(topicName, jsonData);
 		}
@@ -141,6 +139,21 @@ public class CloudClientConnector implements ICloudClient, IConnectionListener
 		}
 		
 		return false;
+	}
+	
+	@Override
+	public boolean sendEdgeDataToCloud(ResourceNameEnum resource, ActuatorData data)
+	{
+	    if (resource != null && data != null) {
+	        String jsonData = DataUtil.getInstance().actuatorDataToTimeAndValueJson(data);
+	        String topicName = createTopicName(resource);
+	        
+	        _Logger.fine("Publishing actuator data to cloud: " + topicName);
+	        
+	        return publishMessageToCloud(topicName, jsonData);
+	    }
+	    
+	    return false;
 	}
 	
 	@Override

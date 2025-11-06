@@ -333,7 +333,7 @@ public class MqttClientConnector implements IPubSubClient, MqttCallbackExtended
 	@Override
 	public void deliveryComplete(IMqttDeliveryToken token)
 	{
-		_Logger.info("Delivered MQTT message with ID: " + token.getMessageId());
+		//_Logger.info("Delivered MQTT message with ID: " + token.getMessageId());
 	}
 	
 	@Override

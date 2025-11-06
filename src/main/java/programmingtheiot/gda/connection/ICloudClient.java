@@ -9,6 +9,7 @@ package programmingtheiot.gda.connection;
 
 import programmingtheiot.common.IDataMessageListener;
 import programmingtheiot.common.ResourceNameEnum;
+import programmingtheiot.data.ActuatorData;
 import programmingtheiot.data.SensorData;
 import programmingtheiot.data.SystemPerformanceData;
 
@@ -53,7 +54,18 @@ public interface ICloudClient
 	 * @param resource The resource enum to use for this send request.
 	 * @param data The SystemPerformanceData instance to publish to the remote cloud service.
 	 * @return True on success, False otherwise.
+	 * 
 	 */
+	
+	public boolean sendEdgeDataToCloud(ResourceNameEnum resource, ActuatorData data);
+	/**
+	 * Attempts to send the given ActuatorData instance to the remote cloud service.
+	 * 
+	 * @param resource The resource enum to use for this send request.
+	 * @param data The ActuatorData instance to publish to the remote cloud service.
+	 * @return True on success, False otherwise.
+	 */
+	
 	public boolean sendEdgeDataToCloud(ResourceNameEnum resource, SystemPerformanceData data);
 	
 	/**
@@ -63,6 +75,8 @@ public interface ICloudClient
 	 * @param resource The resource enum to use for this subscribe request.
 	 * @return True on success, False otherwise.
 	 */
+	
+	
 	public boolean subscribeToCloudEvents(ResourceNameEnum resource);
 	
 	/**

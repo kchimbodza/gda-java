@@ -158,6 +158,9 @@ public class DeviceDataManager implements IDataMessageListener
                 this.mqttClient.subscribeToTopic(ResourceNameEnum.CDA_HUMIDITY_SENSOR_MSG_RESOURCE, qos);
                 this.mqttClient.subscribeToTopic(ResourceNameEnum.CDA_PRESSURE_SENSOR_MSG_RESOURCE, qos);
                 
+                // Subscribe to LED position topic (PIOT-GDA-12-004)
+                this.mqttClient.subscribeToTopic(ResourceNameEnum.CDA_LED_POSITION_MSG_RESOURCE, qos);
+                
                 this.mqttClient.subscribeToTopic(ResourceNameEnum.CDA_SYSTEM_PERF_MSG_RESOURCE, qos);
             } else {
                 _Logger.severe("Failed to connect MQTT client to broker.");
@@ -203,6 +206,9 @@ public class DeviceDataManager implements IDataMessageListener
             this.mqttClient.unsubscribeFromTopic(ResourceNameEnum.CDA_TEMP_SENSOR_MSG_RESOURCE);
             this.mqttClient.unsubscribeFromTopic(ResourceNameEnum.CDA_HUMIDITY_SENSOR_MSG_RESOURCE);
             this.mqttClient.unsubscribeFromTopic(ResourceNameEnum.CDA_PRESSURE_SENSOR_MSG_RESOURCE);
+            
+            // Unsubscribe from LED position topic (PIOT-GDA-12-004)
+            this.mqttClient.unsubscribeFromTopic(ResourceNameEnum.CDA_LED_POSITION_MSG_RESOURCE);
             
             this.mqttClient.unsubscribeFromTopic(ResourceNameEnum.CDA_SYSTEM_PERF_MSG_RESOURCE);
             
@@ -302,6 +308,26 @@ public class DeviceDataManager implements IDataMessageListener
                         return this.handleSensorMessage(resourceName, sd);
                     } else {
                         _Logger.warning("Failed to parse SensorData from JSON");
+                        return false;
+                    }
+                    
+                } else if (resourceName == ResourceNameEnum.CDA_LED_POSITION_MSG_RESOURCE) {
+                    _Logger.info("Handling incoming LED Position message from: " + resourceName.getResourceName());
+                    
+                    try {
+                        ActuatorData ledPositionData = DataUtil.getInstance().jsonToActuatorData(msg);
+                        
+                        if (ledPositionData != null) {
+                            _Logger.info("LED Position data parsed: " + ledPositionData);
+                            boolean result = this.handleLedPositionMessage(resourceName, ledPositionData);
+                            _Logger.info("LED Position message handling result: " + result);
+                            return result;
+                        } else {
+                            _Logger.warning("Failed to parse LED Position data from JSON");
+                            return false;
+                        }
+                    } catch (Exception e) {
+                        _Logger.log(Level.WARNING, "Exception handling LED position message: " + msg, e);
                         return false;
                     }
                     
@@ -629,6 +655,78 @@ public class DeviceDataManager implements IDataMessageListener
         
         // TODO: Implement command interpretation and handling logic
         // This is a command the GDA should interpret and handle internally
+    }
+    
+    /**
+     * Handles incoming LED position data from CDA.
+     * Extracts X, Y from the LED position message and forwards to Ubidots.
+     * (PIOT-GDA-12-004)
+     * 
+     * @param resourceName The resource name
+     * @param data The LED position data
+     * @return True if handled successfully
+     */
+    private boolean handleLedPositionMessage(ResourceNameEnum resourceName, ActuatorData data)
+    {
+        if (data != null) {
+            _Logger.info("Processing LED Position message for Ubidots: " + data);
+            
+            try {
+                // Validate that we have the ActuatorData parsed correctly
+                if (data.getName() == null) {
+                    _Logger.warning("Invalid LED position data: " + data);
+                    return false;
+                }
+                
+                _Logger.info("LED Position ActuatorData created: " + data.getName() + 
+                            ", value=" + data.getValue());
+                
+                // Create a SensorData object for LED Horizontal Position (X)
+                SensorData ledXData = new SensorData();
+                ledXData.setName("LedHorizontalPosition");
+                ledXData.setTypeID(ConfigConst.DEFAULT_SENSOR_TYPE);
+                ledXData.setLocationID(data.getLocationID());
+                
+                // Create a SensorData object for LED Vertical Position (Y)
+                SensorData ledYData = new SensorData();
+                ledYData.setName("LedVerticalPosition");
+                ledYData.setTypeID(ConfigConst.DEFAULT_SENSOR_TYPE);
+                ledYData.setLocationID(data.getLocationID());
+                
+                // Extract X and Y values from the ActuatorData
+                double ledX = data.getValue(); // X position value 0-7
+                double ledY = 7.0 - data.getValue(); // Y position (inverse)
+                
+                ledXData.setValue((float)ledX);
+                ledYData.setValue((float)ledY);
+                
+                _Logger.info("LED Position - Horizontal=" + ledX + ", Vertical=" + ledY);
+                
+                // Check if cloud client is ready
+                if (this.cloudClient != null && this.enableCloudClient) {
+                    _Logger.info("Cloud client is available. Sending LED position data to Ubidots...");
+                    
+                    // Send LED Horizontal Position
+                    boolean resultX = this.cloudClient.sendEdgeDataToCloud(resourceName, ledXData);
+                    _Logger.info("LedHorizontalPosition to Ubidots result: " + resultX);
+                    
+                    // Send LED Vertical Position
+                    boolean resultY = this.cloudClient.sendEdgeDataToCloud(resourceName, ledYData);
+                    _Logger.info("LedVerticalPosition to Ubidots result: " + resultY);
+                    
+                    return resultX && resultY;
+                } else {
+                    _Logger.warning("Cloud client is not available or not enabled. Cannot send LED data to Ubidots.");
+                    return false;
+                }
+            } catch (Exception e) {
+                _Logger.log(Level.SEVERE, "Exception processing LED Position: " + data, e);
+                return false;
+            }
+        } else {
+            _Logger.warning("LED Position data is NULL.");
+            return false;
+        }
     }
     
     /**

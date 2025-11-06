@@ -127,6 +127,7 @@ public class ConfigConst
 	public static final int    HUMIDITY_SENSOR_TYPE      = 1010;
 	public static final int    PRESSURE_SENSOR_TYPE      = 1012;
 	public static final int    TEMP_SENSOR_TYPE          = 1013;
+	//public static final int    DISTANCE_SENSOR_TYPE		 = 1014;
 	
 	public static final int    DISPLAY_DEVICE_TYPE       = 2000;
 	public static final int    LED_ACTUATOR_TYPE         = 2001;
